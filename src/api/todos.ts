@@ -12,11 +12,9 @@ export const addTodo = ({ userId, title, completed }: Omit<Todo, 'id'>) => {
 };
 
 export const changeTodo = (id: number, completed: boolean) => {
-  return client.patch(`/todos/${id}`, { completed });
+  return client.patch<Todo>(`/todos/${id}`, { completed });
 };
 
 export const deleteTodo = (id: number) => {
   return client.delete(`/todos/${id}`);
 };
-
-// Add more methods here

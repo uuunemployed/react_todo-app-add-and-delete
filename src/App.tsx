@@ -11,18 +11,19 @@ import { TodoList } from './components/TodoList/TodoList';
 import { Footer } from './components/Footer/Footer';
 import { SelectFilterValue } from './types/SelectFilterValue';
 import { TempTodo } from './components/TempTodo/TempTodo';
+import { ErrorState } from './types/ErrorState';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [todoTitle, setTodoTitle] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectValue, setSelectValue] = useState<SelectFilterValue>(
     SelectFilterValue.All,
   );
   const [count, setCount] = useState(0);
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [processingIds, setProcessingIds] = useState<number[]>([]);
+  const [errorMessage, setErrorMessage] = useState<ErrorState>(null);
 
   const titleField = useRef<HTMLInputElement>(null);
 
@@ -39,7 +40,7 @@ export const App: React.FC = () => {
       .getTodos()
       .then(setTodos)
       .catch(error => {
-        setErrorMessage('Unable to load todos');
+        setErrorMessage({ message: 'Unable to load todos', ts: Date.now() });
         throw error;
       });
   }
@@ -55,7 +56,7 @@ export const App: React.FC = () => {
         setTodos(currentTodos => [...currentTodos, newTodo]);
       })
       .catch(error => {
-        setErrorMessage('Unable to add a todo');
+        setErrorMessage({ message: 'Unable to add a todo', ts: Date.now() });
         throw error;
       })
       .finally(() => {
@@ -76,7 +77,7 @@ export const App: React.FC = () => {
       })
       .catch(() => {
         setTodos(todos);
-        setErrorMessage('Unable to delete a todo');
+        setErrorMessage({ message: 'Unable to delete a todo', ts: Date.now() });
       })
       .finally(() => {
         setProcessingIds(ids => ids.filter(id => id !== todoId));
@@ -85,12 +86,16 @@ export const App: React.FC = () => {
   }
 
   useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       setErrorMessage(null);
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [errorMessage]);
+  }, [errorMessage?.ts]);
 
   useEffect(() => {
     getTodos();
@@ -114,16 +119,16 @@ export const App: React.FC = () => {
     });
   }, [todos, selectValue]);
 
-  function toggleTodo(id: number) {
+  function clearCompletedTodo() {
+    todos.forEach(todo => todo.completed && deleteTodo(todo.id));
+  }
+
+  function changeTodo(id: number) {
     setTodos(currentTodos =>
       currentTodos.map(todo =>
         todo.id === id ? { ...todo, completed: !todo.completed } : todo,
       ),
     );
-  }
-
-  function clearCompletedTodo() {
-    todos.forEach(todo => todo.completed && deleteTodo(todo.id));
   }
 
   if (!USER_ID) {
@@ -136,13 +141,14 @@ export const App: React.FC = () => {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorMessage(null);
 
     if (loading) {
       return;
     }
 
     if (todoTitle.trim().length === 0) {
-      setErrorMessage('Title should not be empty');
+      setErrorMessage({ message: 'Title should not be empty', ts: Date.now() });
 
       return;
     }
@@ -178,9 +184,9 @@ export const App: React.FC = () => {
         />
         <TodoList
           filteredTodos={filteredTodos}
-          onToggle={toggleTodo}
           processingIds={processingIds}
           deleteTodo={deleteTodo}
+          changeTodo={changeTodo}
         />
 
         {loading && <TempTodo tempTodo={tempTodo} loading={loading} />}
@@ -211,7 +217,7 @@ export const App: React.FC = () => {
             setErrorMessage(null);
           }}
         />
-        {errorMessage}
+        {errorMessage?.message}
       </div>
     </div>
   );

@@ -3,16 +3,16 @@ import { Todo } from '../../types/Todo';
 
 type Props = {
   todo: Todo;
-  onToggle: (value: number) => void;
   processingIds: number[];
   deleteTodo: (value: number) => void;
+  changeTodo: (id: number) => void;
 };
 
 export const TodoItem: React.FC<Props> = ({
   todo,
-  onToggle,
   processingIds,
   deleteTodo,
+  changeTodo,
 }) => {
   return (
     <div
@@ -28,7 +28,7 @@ export const TodoItem: React.FC<Props> = ({
           className="todo__status"
           checked={todo.completed}
           onChange={() => {
-            onToggle(todo.id);
+            changeTodo(todo.id);
           }}
         />
       </label>
@@ -48,7 +48,6 @@ export const TodoItem: React.FC<Props> = ({
         ×
       </button>
 
-      {/* overlay will cover the todo while it is being deleted or updated */}
       <div
         data-cy="TodoLoader"
         className={classNames('modal overlay', {
