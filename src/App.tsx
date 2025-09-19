@@ -33,13 +33,15 @@ export const App: React.FC = () => {
   }, [loading, todos.length]);
 
   useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 3000);
-
-      return () => clearTimeout(timer);
+    if (!errorMessage) {
+      return;
     }
+
+    const timer = setTimeout(() => {
+      setErrorMessage(null);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [errorMessage]);
 
   function getTodos() {
@@ -84,7 +86,6 @@ export const App: React.FC = () => {
         );
       })
       .catch(error => {
-        setTodos(todos);
         setErrorMessage('Unable to delete a todo');
         throw error;
       })
@@ -127,23 +128,7 @@ export const App: React.FC = () => {
   function clearCompletedTodo() {
     const completedTodos = todos.filter(todo => todo.completed);
 
-    Promise.allSettled(
-      completedTodos.map(todo => postService.deleteTodo(todo.id)),
-    )
-      .then(results => {
-        const successfulIds = completedTodos
-          .map((todo, i) =>
-            results[i].status === 'fulfilled' ? todo.id : null,
-          )
-          .filter(id => id !== null);
-
-        setTodos(current =>
-          current.filter(todo => !successfulIds.includes(todo.id)),
-        );
-      })
-      .catch(() => {
-        setErrorMessage('Unable to delete some todos');
-      });
+    Promise.allSettled(completedTodos.map(todo => deleteTodo(todo.id)));
   }
 
   if (!USER_ID) {
