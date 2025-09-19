@@ -125,7 +125,25 @@ export const App: React.FC = () => {
   }, [todos, selectValue]);
 
   function clearCompletedTodo() {
-    todos.forEach(todo => todo.completed && deleteTodo(todo.id));
+    const completedTodos = todos.filter(todo => todo.completed);
+
+    Promise.allSettled(
+      completedTodos.map(todo => postService.deleteTodo(todo.id)),
+    )
+      .then(results => {
+        const successfulIds = completedTodos
+          .map((todo, i) =>
+            results[i].status === 'fulfilled' ? todo.id : null,
+          )
+          .filter(id => id !== null);
+
+        setTodos(current =>
+          current.filter(todo => !successfulIds.includes(todo.id)),
+        );
+      })
+      .catch(() => {
+        setErrorMessage('Unable to delete some todos');
+      });
   }
 
   if (!USER_ID) {
